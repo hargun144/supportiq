@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install *)",
+      "Bash(python test_endpoints.py)",
+      "Bash(.venv\\\\Scripts\\\\activate)",
+      "Bash(python -c \"from main import app; print\\('Import successful'\\)\")",
+      "Bash(C:WindowsSystem32taskkill.exe *)",
+      "Bash(/c/Windows/System32/taskkill.exe *)",
+      "Bash(venv/Scripts/pip install *)",
+      "Bash(python *)",
+      "Bash(dir *)",
+      "Bash(tasklist)",
+      "Bash(findstr 4632)",
+      "Bash(curl -X POST \"http://localhost:8000/auth/register\" -H \"Content-Type: application/json\" -d '{\"email\": \"test@example.com\", \"password\": \"securepassword123\", \"full_name\": \"Test User\"}')"
+    ]
+  }
+}
