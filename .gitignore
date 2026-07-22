@@ -1,0 +1,34 @@
+# Python / Virtual Environments
+.venv/
+.venv*/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment & Secrets
+.env
+.env.*
+
+# Database & Storage
+*.db
+*.sqlite
+*.sqlite3
+*.log
+
+# Node & Frontend
+node_modules/
+dist/
+build/
+.next/
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# System / OS
+.DS_Store
+Thumbs.db
