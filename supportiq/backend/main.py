@@ -21,15 +21,30 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# CORS configuration for Vite default dev server
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:5174",
-    "http://127.0.0.1:5174",
-    "http://localhost:5175",
-    "http://127.0.0.1:5175",
-]
+import os
+
+try:
+    from .database import engine, Base
+except ImportError:
+    from database import engine, Base
+
+# CORS configuration
+cors_origins_env = os.getenv("CORS_ORIGINS")
+if cors_origins_env:
+    if cors_origins_env.strip() == "*":
+        origins = ["*"]
+    else:
+        origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
+else:
+    origins = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+        "http://localhost:5175",
+        "http://127.0.0.1:5175",
+        "*"
+    ]
 
 app.add_middleware(
     CORSMiddleware,
@@ -38,6 +53,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+def startup_db_init():
+    """Ensure database schema is created on server startup."""
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database schema initialized successfully.")
+    except Exception as e:
+        logger.error(f"Startup database initialization error: {e}")
+
 
 
 # Global Exception Handlers

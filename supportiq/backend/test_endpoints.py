@@ -58,20 +58,22 @@ async def test_production_endpoints():
         print("Health check passed.")
 
         # Register & Login user
+        tester_email = f"prod_tester_{int(time.time())}@example.com"
         user_data = {
-            "email": "prod_tester@example.com",
+            "email": tester_email,
             "password": "securepassword123",
             "full_name": "Production Tester"
         }
         resp = await client.post(f"{base_url}/auth/register", json=user_data)
-        assert resp.status_code in (201, 400)
+        assert resp.status_code == 201
 
         login_data = {
-            "email": "prod_tester@example.com",
+            "email": tester_email,
             "password": "securepassword123"
         }
         resp = await client.post(f"{base_url}/auth/login", json=login_data)
         assert resp.status_code == 200
+
         access_token = resp.json()["access_token"]
         headers = {"Authorization": f"Bearer {access_token}"}
         print("Authenticated successfully.")
