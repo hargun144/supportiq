@@ -5,7 +5,7 @@ try:
     from models import (
         Customer, CustomerTier,
         Agent, AgentSpecialty,
-        Ticket, TicketChannel, TicketStatus,
+        Ticket, TicketChannel, TicketStatus, TicketCategory,
         AuditLog, KnowledgeDocument, Conversation, InteractionHistory,
         User, Role
     )
@@ -15,7 +15,7 @@ except ImportError:
     from backend.models import (
         Customer, CustomerTier,
         Agent, AgentSpecialty,
-        Ticket, TicketChannel, TicketStatus,
+        Ticket, TicketChannel, TicketStatus, TicketCategory,
         AuditLog, KnowledgeDocument, Conversation, InteractionHistory
     )
 
@@ -72,11 +72,15 @@ ANGRY_MESSAGES = [
 ]
 
 
-def seed_database():
+def seed_database(reset_db: bool = False):
     db = SessionLocal()
     try:
-        print("Re-creating database tables with updated schema and indexes...")
-        Base.metadata.drop_all(bind=engine)
+        if reset_db:
+            print("Re-creating database tables with updated schema and indexes...")
+            try:
+                Base.metadata.drop_all(bind=engine)
+            except Exception as e:
+                print(f"Warning during drop_all: {e}")
         Base.metadata.create_all(bind=engine)
 
         print("Seeding 15 customers...")
@@ -170,6 +174,13 @@ def seed_database():
         except ImportError:
             from backend.services.ai_service import classify_ticket
 
+        agent_specialty_map = {
+            TicketCategory.BILLING: AgentSpecialty.BILLING,
+            TicketCategory.TECHNICAL: AgentSpecialty.TECHNICAL,
+            TicketCategory.COMPLAINT: AgentSpecialty.COMPLAINT,
+            TicketCategory.GENERAL: AgentSpecialty.GENERAL
+        }
+
         for i in range(150):
             customer = random.choice(customers)
             channel = random.choice(channels)
@@ -182,9 +193,17 @@ def seed_database():
 
             ai_res = classify_ticket(message_text)
 
+            target_specialty = agent_specialty_map.get(ai_res.category, AgentSpecialty.GENERAL)
+            eligible_agents = [a for a in agents if a.specialty == target_specialty]
+            if not eligible_agents:
+                eligible_agents = [a for a in agents if a.specialty == AgentSpecialty.GENERAL] or agents
+
+            eligible_agents.sort(key=lambda a: (a.current_load, a.id))
+            assigned_agent = eligible_agents[0] if eligible_agents else None
+
             ticket = Ticket(
                 customer_id=customer.id,
-                agent_id=None,
+                agent_id=assigned_agent.id if assigned_agent else None,
                 channel=channel,
                 message_text=message_text,
                 category=ai_res.category,
@@ -197,7 +216,10 @@ def seed_database():
             )
             tickets.append(ticket)
 
+            if assigned_agent:
+                assigned_agent.current_load += 1
 
+        db.add_all(agents)
         db.add_all(tickets)
         db.commit()
 
